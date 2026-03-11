@@ -1,13 +1,13 @@
 --- a/chrome/browser/resources/settings/route.ts
 +++ b/chrome/browser/resources/settings/route.ts
-@@ -358,7 +358,7 @@ export let routes: SettingsRoutes = Rout
+@@ -359,7 +359,7 @@
  // Returns the "effective" route when at chrome://settings/.
  export function getTopLevelRoute(): Route {
    if (!loadTimeData.getBoolean('isGuest')) {
 -    return routes.PEOPLE;
 +    return routes.APPEARANCE;
    }
- 
+
    let guestTopLevelRoute = routes.SEARCH;
 --- a/chrome/browser/resources/settings/settings_menu/settings_menu.html
 +++ b/chrome/browser/resources/settings/settings_menu/settings_menu.html
@@ -22,10 +22,10 @@
 +          $i18n{appearanceBehaviorPageTitle}
 +          <cr-ripple></cr-ripple>
 +        </a>
-         <a role="menuitem" href="/privacy"
-             hidden="[[!pageVisibility_.privacy]]"
-             class="cr-nav-menu-item">
-@@ -71,21 +78,6 @@
+         <a role="menuitem" id="autofill" href="/autofill"
+             on-click="onAutofillClick_"
+             class="cr-nav-menu-item"
+@@ -81,21 +88,6 @@
            $i18n{performancePageTitle}
            <cr-ripple></cr-ripple>
          </a>
