@@ -272,6 +272,7 @@ helium/ui/remove-autofill-link-to-password-manager.patch
 helium/ui/fix-caption-button-bounds.patch
 helium/ui/find-bar.patch
 helium/ui/remove-zoom-action.patch
+helium/passwords/restore-chromium-password-manager.patch
 
 helium/ui/layout/core.patch
 helium/ui/layout/settings.patch
