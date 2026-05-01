@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# Copyright (c) 2026 The Helium Authors
+# You can use, redistribute, and/or modify this source code under
+# the terms of the GPL-3.0 license that can be found in the LICENSE file.
+
 # Copyright (c) 2019 The ungoogled-chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE.ungoogled_chromium file.
@@ -88,6 +92,39 @@ def _rename_files_with_dirs(root_dir, source_dir, sorted_file_iter):
         complete_path = complete_path.parent
 
 
+def _parse_series_metadata(series_lines):
+    paths = set()
+    # patch path -> list of lines after patch path and before next patch path
+    path_comments = {}
+    # patch path -> inline comment for patch
+    path_inline_comments = {}
+    previous_path = None
+    for partial_path in series_lines:
+        if not partial_path or partial_path.startswith('#'):
+            if previous_path not in path_comments:
+                path_comments[previous_path] = []
+            path_comments[previous_path].append(partial_path)
+        else:
+            path_parts = partial_path.split(' #', maxsplit=1)
+            previous_path = path_parts[0]
+            paths.add(previous_path)
+            if len(path_parts) == 2:
+                path_inline_comments[path_parts[0]] = path_parts[1]
+    return paths, path_comments, path_inline_comments
+
+
+def _restore_series_metadata(series, path_comments, path_inline_comments):
+    series_index = 0
+    while series_index < len(series):
+        current_path = series[series_index]
+        if current_path in path_inline_comments:
+            series[series_index] = current_path + ' #' + path_inline_comments[current_path]
+        if current_path in path_comments:
+            series.insert(series_index + 1, '\n'.join(path_comments[current_path]))
+            series_index += 1
+        series_index += 1
+
+
 def unmerge_platform_patches(platform_patches_dir, prepend_patches_dir):
     '''
     Undo merge_platform_patches(), adding any new patches from series.merged as necessary
@@ -98,32 +135,17 @@ def unmerge_platform_patches(platform_patches_dir, prepend_patches_dir):
         get_logger().error('Unable to find series.prepend at: %s',
                            platform_patches_dir / _SERIES_PREPEND)
         return False
-    prepend_series = set(
-        filter(len,
-               (platform_patches_dir / _SERIES_PREPEND).read_text(encoding=ENCODING).splitlines()))
+    prepend_series_lines = (platform_patches_dir /
+                            _SERIES_PREPEND).read_text(encoding=ENCODING).splitlines()
+    prepend_series, prepend_path_comments, prepend_path_inline_comments = _parse_series_metadata(
+        prepend_series_lines)
 
     # Determine positions of blank spaces in series.orig
     if not (platform_patches_dir / _SERIES_ORIG).exists():
         get_logger().error('Unable to find series.orig at: %s', platform_patches_dir / _SERIES_ORIG)
         return False
     orig_series = (platform_patches_dir / _SERIES_ORIG).read_text(encoding=ENCODING).splitlines()
-    orig_series_paths = set()
-    # patch path -> list of lines after patch path and before next patch path
-    path_comments = {}
-    # patch path -> inline comment for patch
-    path_inline_comments = {}
-    previous_path = None
-    for partial_path in orig_series:
-        if not partial_path or partial_path.startswith('#'):
-            if partial_path not in path_comments:
-                path_comments[previous_path] = []
-            path_comments[previous_path].append(partial_path)
-        else:
-            path_parts = partial_path.split(' #', maxsplit=1)
-            previous_path = path_parts[0]
-            orig_series_paths.add(previous_path)
-            if len(path_parts) == 2:
-                path_inline_comments[path_parts[0]] = path_parts[1]
+    orig_series_paths, path_comments, path_inline_comments = _parse_series_metadata(orig_series)
 
     # Apply changes on series.merged into a modified version of series.orig
     if not (platform_patches_dir / _SERIES_MERGED).exists():
@@ -148,15 +170,8 @@ def unmerge_platform_patches(platform_patches_dir, prepend_patches_dir):
     _rename_files_with_dirs(platform_patches_dir, prepend_patches_dir,
                             sorted(prepend_series.union(generic_series)))
 
-    series_index = 0
-    while series_index < len(new_series):
-        current_path = new_series[series_index]
-        if current_path in path_inline_comments:
-            new_series[series_index] = current_path + ' #' + path_inline_comments[current_path]
-        if current_path in path_comments:
-            new_series.insert(series_index + 1, '\n'.join(path_comments[current_path]))
-            series_index += 1
-        series_index += 1
+    _restore_series_metadata(generic_series, prepend_path_comments, prepend_path_inline_comments)
+    _restore_series_metadata(new_series, path_comments, path_inline_comments)
 
     # Write series file
     with (prepend_patches_dir / _SERIES).open('w', encoding=ENCODING) as series_file:
