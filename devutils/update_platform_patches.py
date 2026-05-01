@@ -135,17 +135,15 @@ def unmerge_platform_patches(platform_patches_dir, prepend_patches_dir):
         get_logger().error('Unable to find series.prepend at: %s',
                            platform_patches_dir / _SERIES_PREPEND)
         return False
-    prepend_series_lines = (platform_patches_dir /
-                            _SERIES_PREPEND).read_text(encoding=ENCODING).splitlines()
     prepend_series, prepend_path_comments, prepend_path_inline_comments = _parse_series_metadata(
-        prepend_series_lines)
+        (platform_patches_dir / _SERIES_PREPEND).read_text(encoding=ENCODING).splitlines())
 
     # Determine positions of blank spaces in series.orig
     if not (platform_patches_dir / _SERIES_ORIG).exists():
         get_logger().error('Unable to find series.orig at: %s', platform_patches_dir / _SERIES_ORIG)
         return False
-    orig_series = (platform_patches_dir / _SERIES_ORIG).read_text(encoding=ENCODING).splitlines()
-    orig_series_paths, path_comments, path_inline_comments = _parse_series_metadata(orig_series)
+    orig_series_paths, path_comments, path_inline_comments = _parse_series_metadata(
+        (platform_patches_dir / _SERIES_ORIG).read_text(encoding=ENCODING).splitlines())
 
     # Apply changes on series.merged into a modified version of series.orig
     if not (platform_patches_dir / _SERIES_MERGED).exists():
