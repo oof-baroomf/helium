@@ -92,6 +92,10 @@ def _rename_files_with_dirs(root_dir, source_dir, sorted_file_iter):
         complete_path = complete_path.parent
 
 
+def _series_path(series_line):
+    return series_line.split(' #', maxsplit=1)[0]
+
+
 def _parse_series_metadata(series_lines):
     paths = set()
     # patch path -> list of lines after patch path and before next patch path
@@ -105,11 +109,11 @@ def _parse_series_metadata(series_lines):
                 path_comments[previous_path] = []
             path_comments[previous_path].append(partial_path)
         else:
-            path_parts = partial_path.split(' #', maxsplit=1)
-            previous_path = path_parts[0]
+            previous_path = _series_path(partial_path)
             paths.add(previous_path)
+            path_parts = partial_path.split(' #', maxsplit=1)
             if len(path_parts) == 2:
-                path_inline_comments[path_parts[0]] = path_parts[1]
+                path_inline_comments[previous_path] = path_parts[1]
     return paths, path_comments, path_inline_comments
 
 
@@ -117,10 +121,11 @@ def _restore_series_metadata(series, path_comments, path_inline_comments):
     series_index = 0
     while series_index < len(series):
         current_path = series[series_index]
-        if current_path in path_inline_comments:
-            series[series_index] = current_path + ' #' + path_inline_comments[current_path]
-        if current_path in path_comments:
-            series.insert(series_index + 1, '\n'.join(path_comments[current_path]))
+        clean_path = _series_path(current_path)
+        if clean_path in path_inline_comments:
+            series[series_index] = clean_path + ' #' + path_inline_comments[clean_path]
+        if clean_path in path_comments:
+            series.insert(series_index + 1, '\n'.join(path_comments[clean_path]))
             series_index += 1
         series_index += 1
 
@@ -156,17 +161,19 @@ def unmerge_platform_patches(platform_patches_dir, prepend_patches_dir):
     new_series = []
     in_platform_series = False
     for current_path in merged_series:
-        if current_path in orig_series_paths:
+        clean_path = _series_path(current_path)
+        if clean_path in orig_series_paths:
             in_platform_series = True
-        if current_path in prepend_series or not in_platform_series:
+        if clean_path in prepend_series or not in_platform_series:
             generic_series.append(current_path)
         else:
             new_series.append(current_path)
 
     # Move prepended files back to original location, preserving changes
     # including any new patches added before the platform patch block.
-    _rename_files_with_dirs(platform_patches_dir, prepend_patches_dir,
-                            sorted(prepend_series.union(generic_series)))
+    _rename_files_with_dirs(
+        platform_patches_dir, prepend_patches_dir,
+        sorted(prepend_series.union(_series_path(patch_path) for patch_path in generic_series)))
 
     _restore_series_metadata(generic_series, prepend_path_comments, prepend_path_inline_comments)
     _restore_series_metadata(new_series, path_comments, path_inline_comments)
