@@ -73,6 +73,7 @@ def _rename_files_with_dirs(root_dir, source_dir, sorted_file_iter):
         complete_path = Path(root_dir, partial_path)
         complete_source_path = Path(source_dir, partial_path)
         try:
+            complete_source_path.parent.mkdir(parents=True, exist_ok=True)
             complete_path.rename(complete_source_path)
         except FileNotFoundError:
             get_logger().warning('Could not move prepended patch: %s', complete_path)
@@ -101,14 +102,12 @@ def unmerge_platform_patches(platform_patches_dir, prepend_patches_dir):
         filter(len,
                (platform_patches_dir / _SERIES_PREPEND).read_text(encoding=ENCODING).splitlines()))
 
-    # Move prepended files back to original location, preserving changes
-    _rename_files_with_dirs(platform_patches_dir, prepend_patches_dir, sorted(prepend_series))
-
     # Determine positions of blank spaces in series.orig
     if not (platform_patches_dir / _SERIES_ORIG).exists():
         get_logger().error('Unable to find series.orig at: %s', platform_patches_dir / _SERIES_ORIG)
         return False
     orig_series = (platform_patches_dir / _SERIES_ORIG).read_text(encoding=ENCODING).splitlines()
+    orig_series_paths = set()
     # patch path -> list of lines after patch path and before next patch path
     path_comments = {}
     # patch path -> inline comment for patch
@@ -122,6 +121,7 @@ def unmerge_platform_patches(platform_patches_dir, prepend_patches_dir):
         else:
             path_parts = partial_path.split(' #', maxsplit=1)
             previous_path = path_parts[0]
+            orig_series_paths.add(previous_path)
             if len(path_parts) == 2:
                 path_inline_comments[path_parts[0]] = path_parts[1]
 
@@ -130,10 +130,24 @@ def unmerge_platform_patches(platform_patches_dir, prepend_patches_dir):
         get_logger().error('Unable to find series.merged at: %s',
                            platform_patches_dir / _SERIES_MERGED)
         return False
-    new_series = filter(len, (platform_patches_dir /
-                              _SERIES_MERGED).read_text(encoding=ENCODING).splitlines())
-    new_series = filter((lambda x: x not in prepend_series), new_series)
-    new_series = list(new_series)
+    merged_series = filter(len, (platform_patches_dir /
+                                 _SERIES_MERGED).read_text(encoding=ENCODING).splitlines())
+    generic_series = []
+    new_series = []
+    in_platform_series = False
+    for current_path in merged_series:
+        if current_path in orig_series_paths:
+            in_platform_series = True
+        if current_path in prepend_series or not in_platform_series:
+            generic_series.append(current_path)
+        else:
+            new_series.append(current_path)
+
+    # Move prepended files back to original location, preserving changes
+    # including any new patches added before the platform patch block.
+    _rename_files_with_dirs(platform_patches_dir, prepend_patches_dir,
+                            sorted(prepend_series.union(generic_series)))
+
     series_index = 0
     while series_index < len(new_series):
         current_path = new_series[series_index]
@@ -145,6 +159,9 @@ def unmerge_platform_patches(platform_patches_dir, prepend_patches_dir):
         series_index += 1
 
     # Write series file
+    with (prepend_patches_dir / _SERIES).open('w', encoding=ENCODING) as series_file:
+        series_file.write('\n'.join(generic_series))
+        series_file.write('\n')
     with (platform_patches_dir / _SERIES).open('w', encoding=ENCODING) as series_file:
         series_file.write('\n'.join(new_series))
         series_file.write('\n')
