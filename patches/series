@@ -104,6 +104,7 @@ brave/tab-cycling-mru-impl.patch
 helium/core/add-zen-importer.patch
 helium/core/add-arc-importer.patch
 helium/core/disable-unsupported-importers.patch
+helium/core/restore-local-password-autofill.patch
 helium/core/fix-building-without-safebrowsing.patch
 helium/core/services-prefs.patch
 helium/core/services-schema-nag.patch
@@ -191,7 +192,6 @@ helium/core/custom-profile-avatar.patch
 
 helium/settings/settings-page-icons.patch
 helium/settings/move-search-suggest.patch
-helium/settings/remove-autofill.patch
 helium/settings/remove-profile-page-sections.patch
 helium/settings/fix-page-names.patch
 helium/settings/disable-safety-hub-page.patch
@@ -211,7 +211,6 @@ helium/settings/add-search-engine-button.patch
 helium/settings/custom-profile-avatar-ui.patch
 
 helium/hop/setup.patch
-helium/hop/disable-password-manager.patch
 
 helium/ui/layout-constants.patch
 helium/ui/layout-provider.patch
@@ -242,6 +241,7 @@ helium/ui/fix-customize-side-panel.patch
 helium/ui/side-panel.patch
 helium/ui/remove-dead-toolbar-actions.patch
 helium/ui/remove-dead-profile-actions.patch
+helium/ui/restore-autofill-profile-entry.patch
 helium/ui/clean-up-installed-extension-bubble.patch
 helium/ui/add-specific-error-for-disabled-extension-downloads.patch
 helium/ui/selected-keyword-view.patch
@@ -273,7 +273,6 @@ helium/ui/helium-color-scheme.patch
 helium/ui/improve-flags-webui.patch
 helium/ui/ublock-show-in-settings.patch
 helium/ui/licenses-in-credits.patch
-helium/ui/remove-autofill-link-to-password-manager.patch
 helium/ui/fix-caption-button-bounds.patch
 helium/ui/find-bar.patch
 helium/ui/remove-zoom-action.patch
@@ -290,6 +289,7 @@ helium/ui/layout/minimal-location-bar.patch
 helium/ui/layout/dynamic.patch
 helium/ui/layout/compact.patch
 helium/ui/layout/vertical.patch
+helium/ui/fix-new-tab-vertical-scroll.patch
 helium/ui/layout/toolbar-actions.patch
 
 helium/ui/pdf-viewer.patch

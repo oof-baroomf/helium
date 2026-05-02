@@ -1,0 +1,13 @@
+--- a/chrome/browser/ui/views/tabs/vertical/vertical_tab_strip_view.cc
++++ b/chrome/browser/ui/views/tabs/vertical/vertical_tab_strip_view.cc
+@@ -207,7 +207,9 @@ void VerticalTabStripView::OnTabStripModelChanged(
+     TabStripModel* tab_strip_model,
+     const TabStripModelChange& change,
+     const TabStripSelectionChange& selection) {
+-  if (collection_node_ && selection.active_tab_changed() && selection.new_tab) {
++  // Creating a new tab should not force the vertical tab strip to scroll.
++  if (collection_node_ && selection.active_tab_changed() && selection.new_tab &&
++      change.type() != TabStripModelChange::kInserted) {
+     TabCollectionNode* activated_node =
+         collection_node_->GetNodeForHandle(selection.new_tab->GetHandle());
+     CHECK(activated_node);

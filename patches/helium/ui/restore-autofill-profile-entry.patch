@@ -1,0 +1,10 @@
+--- a/chrome/browser/ui/views/profiles/profile_menu_view.cc
++++ b/chrome/browser/ui/views/profiles/profile_menu_view.cc
+@@ -961,7 +961,6 @@ void ProfileMenuView::MaybeBuildBatchUploadFeatureButton() {
+ }
+ 
+ void ProfileMenuView::BuildAutofillSettingsButton() {
+-  return;
+   CHECK(!profile().IsGuestSession());
+ 
+   int message_id = IDS_PROFILE_MENU_AUTOFILL_SETTINGS_BUTTON;
