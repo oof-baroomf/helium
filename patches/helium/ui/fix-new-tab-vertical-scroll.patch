@@ -1,13 +1,14 @@
---- a/chrome/browser/ui/views/tabs/vertical/vertical_tab_strip_view.cc
-+++ b/chrome/browser/ui/views/tabs/vertical/vertical_tab_strip_view.cc
-@@ -207,7 +207,9 @@ void VerticalTabStripView::OnTabStripModelChanged(
-     TabStripModel* tab_strip_model,
-     const TabStripModelChange& change,
-     const TabStripSelectionChange& selection) {
--  if (collection_node_ && selection.active_tab_changed() && selection.new_tab) {
-+  // Creating a new tab should not force the vertical tab strip to scroll.
-+  if (collection_node_ && selection.active_tab_changed() && selection.new_tab &&
-+      change.type() != TabStripModelChange::kInserted) {
-     TabCollectionNode* activated_node =
-         collection_node_->GetNodeForHandle(selection.new_tab->GetHandle());
-     CHECK(activated_node);
+--- a/chrome/browser/ui/views/tabs/vertical/root_tab_collection_node.cc
++++ b/chrome/browser/ui/views/tabs/vertical/root_tab_collection_node.cc
+@@ -175,7 +175,10 @@ void RootTabCollectionNode::OnTabStripModelChanged(
+     if (selection.new_tab) {
+       changed_tabs.insert(selection.new_tab);
+     }
+-    on_active_tab_changed_callback_list_.Notify(selection.new_tab);
++    // Creating a new tab should not force the vertical tab strip to scroll.
++    if (change.type() != TabStripModelChange::kInserted) {
++      on_active_tab_changed_callback_list_.Notify(selection.new_tab);
++    }
+   }
+ 
+   if (selection.selection_changed()) {
